@@ -17,16 +17,17 @@ pipeline {
 
     stages {
         stage('Fix Git Permissions') {
-                steps {
-                    bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6'
-                    bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6/.git'
-                }
+            steps {
+                bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6'
+                bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6/.git'
             }
+        }
+        
         stage('Checkout') {
             steps {
                 checkout([$class: 'GitSCM',
                     branches: [[name: '*/${BRANCH_NAME ?: "main"}']],
-                    userRemoteConfigs: [[url: 'file:///E:/repos/java-maven-ci-demo.git']]
+                    userRemoteConfigs: [[url: 'https://github.com/V1ach/ipprpo_6']]  // ИСПРАВЛЕНО: GitHub URL
                 ])
             }
         }
@@ -46,11 +47,11 @@ pipeline {
                 always {
                     junit '**/target/surefire-reports/*.xml'
                     publishHTML([reportDir: 'target/site/jacoco',
-                    eportFiles: 'index.html', 
-                    reportName: 'JaCoCo Coverage',
-                    keepAll: true,
-                    alwaysLinkToLastBuild: true,
-                    allowMissing: false]))
+                                reportFiles: 'index.html', 
+                                reportName: 'JaCoCo Coverage',
+                                keepAll: true,
+                                alwaysLinkToLastBuild: true,
+                                allowMissing: false])  // ИСПРАВЛЕНО: убрана лишняя скобка
                 }
             }
         }
