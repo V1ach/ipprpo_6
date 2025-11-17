@@ -23,14 +23,8 @@ pipeline {
             }
         }
         
-        stage('Checkout') {
-            steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/${BRANCH_NAME ?: "main"}']],
-                    userRemoteConfigs: [[url: 'https://github.com/V1ach/ipprpo_6']]  // ИСПРАВЛЕНО: GitHub URL
-                ])
-            }
-        }
+        // УБИРАЕМ stage('Checkout') - он не нужен, так как Jenkins автоматически делает checkout
+        // когда используется "Pipeline script from SCM"
 
         stage('Build') {
             steps {
@@ -51,7 +45,7 @@ pipeline {
                                 reportName: 'JaCoCo Coverage',
                                 keepAll: true,
                                 alwaysLinkToLastBuild: true,
-                                allowMissing: false])  // ИСПРАВЛЕНО: убрана лишняя скобка
+                                allowMissing: false])
                 }
             }
         }
