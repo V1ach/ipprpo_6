@@ -5,42 +5,42 @@ pipeline {
         maven 'Maven 3.9.11'
     }
 
-    options {
-        timestamps()
-        buildDiscarder(logRotator(numToKeepStr: '20'))
-        disableConcurrentBuilds()
-    }
-
-    environment {
-        MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
-    }
-
-    triggers {
-        pollSCM('H/2 * * * *')
-    }
-
     stages {
-        stage('Fix Git Permissions') {
+        stage('Diagnose Project Structure') {
             steps {
-                bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6'
-                bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6/.git'
+                echo "=== CHECKING PROJECT STRUCTURE ==="
+                bat 'dir /S /B'
+                bat 'if exist pom.xml (echo "✅ pom.xml exists" && type pom.xml) else (echo "❌ pom.xml NOT FOUND")'
+                bat 'if exist src (echo "✅ src exists" && dir src /S /B) else (echo "❌ src NOT FOUND")'
+                bat 'if exist src\\main (echo "✅ src/main exists" && dir src\\main /S /B) else (echo "❌ src/main NOT FOUND")'
+                bat 'if exist src\\test (echo "✅ src/test exists" && dir src\\test /S /B) else (echo "❌ src/test NOT FOUND")'
+            }
+        }
+
+        stage('Check Java Version') {
+            steps {
+                echo "=== CHECKING JAVA VERSION ==="
+                bat 'java -version'
+                bat 'javac -version'
             }
         }
 
         stage('Build') {
             steps {
+                echo "=== BUILDING PROJECT ==="
                 bat 'mvn -v'
-                bat 'mvn -B -U clean compile'
+                bat 'mvn -B clean compile -X'  // -X для детального лога
+                bat 'if exist target (echo "✅ target created" && dir target /B) else (echo "❌ target NOT created")'
             }
         }
 
         stage('Test') {
             steps {
-                bat 'mvn -B test'
-                // Диагностические команды
-                bat 'dir target /B'
-                bat 'if exist target\\surefire-reports (dir target\\surefire-reports /B) else (echo "surefire-reports not found")'
-                bat 'if exist target\\site (dir target\\site /B) else (echo "site not found")'
+                echo "=== TESTING PROJECT ==="
+                bat 'mvn -B test -X'  // -X для детального лога
+                bat 'if exist target (echo "✅ target exists" && dir target /B) else (echo "❌ target STILL not created")'
+                bat 'if exist target\\surefire-reports (echo "✅ surefire-reports exists" && dir target\\surefire-reports /B) else (echo "❌ surefire-reports NOT exists")'
+                bat 'if exist target\\site (echo "✅ site exists" && dir target\\site /B) else (echo "❌ site NOT exists")'
             }
             post {
                 always {
@@ -65,36 +65,11 @@ pipeline {
                 }
             }
         }
-
-        stage('Quality gates') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                }
-            }
-            steps {
-                echo 'Quality checks placeholder'
-            }
-        }
-
-        stage('Deploy (local)') {
-            when {
-                branch 'main'
-            }
-            steps {
-                bat 'java -jar target/java-maven-ci-demo-1.0.0.jar'
-                echo 'Application deployed locally'
-            }
-        }
     }
 
     post {
-        success {
-            echo "Build successful for ${env.BRANCH_NAME}"
-        }
-        failure {
-            echo "Build failed for ${env.BRANCH_NAME}"
+        always {
+            echo "=== BUILD FINISHED ==="
         }
     }
 }
