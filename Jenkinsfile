@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven-3.9'
+    }
+
     options {
         timestamps()
         buildDiscarder(logRotator(numToKeepStr: '20'))
@@ -33,12 +37,16 @@ pipeline {
         stage('Test') {
             steps {
                 bat 'mvn -B test'
+                // Диагностические команды
+                bat 'dir target /B'
+                bat 'if exist target\\surefire-reports (dir target\\surefire-reports /B) else (echo "surefire-reports not found")'
+                bat 'if exist target\\site (dir target\\site /B) else (echo "site not found")'
             }
             post {
                 always {
-                    junit '**/target/surefire-reports/*.xml'
+                    junit 'target/surefire-reports/*.xml'
                     publishHTML([reportDir: 'target/site/jacoco',
-                                reportFiles: 'index.html', 
+                                reportFiles: 'index.html',
                                 reportName: 'JaCoCo Coverage',
                                 keepAll: true,
                                 alwaysLinkToLastBuild: true,
@@ -54,26 +62,6 @@ pipeline {
             post {
                 success {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                bat 'mvn -B test'
-                bat 'dir target /B'
-                bat 'if exist target\\surefire-reports (dir target\\surefire-reports /B) else (echo "surefire-reports not found")'
-                bat 'if exist target\\site (dir target\\site /B) else (echo "site not found")'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                    publishHTML([reportDir: 'target/site/jacoco',
-                                reportFiles: 'index.html',
-                                reportName: 'JaCoCo Coverage',
-                                keepAll: true,
-                                alwaysLinkToLastBuild: true,
-                                allowMissing: false])
                 }
             }
         }
