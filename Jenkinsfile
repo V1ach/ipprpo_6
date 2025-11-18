@@ -22,9 +22,6 @@ pipeline {
                 bat 'git config --global --add safe.directory C:/Users/Vlach/Documents/GitHub/ipprpo_6/.git'
             }
         }
-        
-        // УБИРАЕМ stage('Checkout') - он не нужен, так как Jenkins автоматически делает checkout
-        // когда используется "Pipeline script from SCM"
 
         stage('Build') {
             steps {
@@ -57,6 +54,26 @@ pipeline {
             post {
                 success {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                bat 'mvn -B test'
+                bat 'dir target /B'
+                bat 'if exist target\\surefire-reports (dir target\\surefire-reports /B) else (echo "surefire-reports not found")'
+                bat 'if exist target\\site (dir target\\site /B) else (echo "site not found")'
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                    publishHTML([reportDir: 'target/site/jacoco',
+                                reportFiles: 'index.html',
+                                reportName: 'JaCoCo Coverage',
+                                keepAll: true,
+                                alwaysLinkToLastBuild: true,
+                                allowMissing: false])
                 }
             }
         }
